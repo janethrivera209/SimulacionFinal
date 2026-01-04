@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ejercicio 7 – Comparación Stratify</title>
+    {% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .card {
+            border-radius: 14px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        }
+        .grafica-img {
+            max-width: 100%;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container my-5">
+
+    <!-- TÍTULO -->
+    <h1 class="fw-bold text-center mb-3">
+        Ejercicio 7 – Comparación Stratify (Protocol Type)
+    </h1>
+    <p class="text-center text-muted mb-4">
+        <strong>stratify</strong>.
+    </p>
+
+    <!-- FORMULARIO -->
+    <div class="card p-4 mb-4">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">Seleccionar Dataset</label>
+            <input type="file" name="dataset" accept=".csv,.arff" class="form-control mb-3" required>
+            <button type="submit" class="btn btn-primary">
+                Procesar Dataset
+            </button>
+        </form>
+    </div>
+
+    <!-- GRÁFICAS -->
+    {% for g in graficas %}
+    <div class="card p-4 mb-4">
+        <h5 class="fw-semibold mb-3">{{ g.titulo }}</h5>
+        <div class="text-center">
+            <img src="data:image/png;base64,{{ g.imagen }}"
+                 alt="{{ g.titulo }}"
+                 class="grafica-img">
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- VOLVER -->
+    <a href="/" class="btn btn-secondary mt-3">
+        ⬅ Volver
+    </a>
+
+</div>
+
+</body>
+</html>
+

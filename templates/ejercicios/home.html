@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulación - Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #2563eb;
+            --background: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--background);
+            color: var(--text-dark);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 50px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.4rem;
+            font-weight: 600;
+        }
+
+        header p {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: -40px auto 0;
+            padding: 20px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.8rem;
+            margin: 40px 0 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 30px 25px;
+            text-align: left;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--secondary);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h3 {
+            margin: 10px 0 10px;
+            font-size: 1.3rem;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 25px;
+        }
+
+        .card button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: var(--secondary);
+            color: white;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .card button:hover {
+            background: var(--primary);
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Proyecto de Simulación</h1>
+    <p>Análisis y Clasificación de Datos</p>
+</header>
+
+<div class="container">
+    <h2 class="section-title">Ejercicios</h2>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Ejercicio 5</h3>
+            <p>Introducción y análisis inicial del dataset.</p>
+            <button onclick="location.href='/ejercicio5/'">Entrar</button>
+        </div>
+
+        <div class="card">
+            <h3>Ejercicio 6</h3>
+            <p>Visualización y exploración de los datos.</p>
+            <button onclick="location.href='/ejercicio6/'">Entrar</button>
+        </div>
+
+        <div class="card">
+            <h3>Ejercicio 7</h3>
+            <p>División del dataset para entrenamiento y prueba.</p>
+            <button onclick="location.href='/ejercicio7/'">Entrar</button>
+        </div>
+
+        <div class="card">
+            <h3>Ejercicio 8</h3>
+            <p>Preprocesamiento y limpieza de datos.</p>
+            <button onclick="location.href='/ejercicio8/'">Entrar</button>
+        </div>
+
+        <div class="card">
+            <h3>Ejercicio 9</h3>
+            <p>Entrenamiento del modelo de clasificación.</p>
+            <button onclick="location.href='/ejercicio9/'">Entrar</button>
+        </div>
+
+        <div class="card">
+            <h3>Ejercicio 10</h3>
+            <p>Evaluación del desempeño del modelo.</p>
+            <button onclick="location.href='/ejercicio10/'">Entrar</button>
+        </div>
+    </div>
+</div>
+
+
+</body>
+</html>
+
