@@ -6,3 +6,4 @@ scikit-learn
 matplotlib
 seaborn
 liac-arff
+whitenoise
