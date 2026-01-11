@@ -11,7 +11,8 @@ SECRET_KEY = 'django-insecure-&199fv@e9cvg4%#o7n=l$4qe(5yt#$@7pw^vkr155l2o5-j!be
 DEBUG = True
 
 # Solo localhost
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -26,6 +27,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -77,4 +79,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-# No es necesario STATIC_ROOT ni Whitenoise en desarrollo local
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
