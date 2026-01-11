@@ -1,6 +1,8 @@
 from django.shortcuts import render
 import arff
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import io
 import matplotlib.pyplot as plt
 import base64
