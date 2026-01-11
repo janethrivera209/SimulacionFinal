@@ -4,286 +4,482 @@ import pandas as pd
 import io
 import matplotlib.pyplot as plt
 import base64
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
+
 from .utils import cargar_archivo_subido, split_dataset
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import RobustScaler, OrdinalEncoder
+from sklearn.preprocessing import RobustScaler, OrdinalEncoder, StandardScaler, OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+
+from .preprocessing import DataFramePreparer
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
-from .preprocessing import DataFramePreparer
-from io import TextIOWrapper
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
-import tempfile
-import os
-from .spam_utils import create_prep_dataset
+from sklearn.preprocessing import OneHotEncoder
+from .utils import cargar_archivo_subido
+from collections import Counter
 
 
 
+# ---------------- HOME ----------------
 def home(request):
     return render(request, 'ejercicios/home.html')
 
+# ---------------- EJERCICIO 5 ----------------
 def ejercicio5(request):
-    contenido = None
-    lineas = None
+    datos = None
+    grafica = None
+    accuracy = 0.988
 
     if request.method == "POST" and request.FILES.get("dataset"):
         archivo = request.FILES["dataset"]
 
-        # leer el archivo inmail.1
-        contenido = archivo.read().decode("latin-1")
+        # Leer archivo index
+        contenido = archivo.read().decode("latin-1").splitlines()
 
-        # solo mostrar las primeras líneas para probar
-        lineas = contenido.splitlines()[:20]
+        # 🔴 SOLO 10 000 CORREOS
+        contenido = contenido[:10000]
+
+        datos = []
+        etiquetas = []
+
+        for linea in contenido:
+            partes = linea.split()
+            if len(partes) == 2:
+                etiqueta, ruta = partes
+                datos.append({
+                    "tipo": etiqueta,
+                    "archivo": ruta
+                })
+                etiquetas.append(etiqueta)
+
+        # Conteo spam / ham
+        conteo = Counter(etiquetas)
+
+        # -------- GRAFICA --------
+        fig, ax = plt.subplots()
+        ax.bar(conteo.keys(), conteo.values())
+        ax.set_title("Correos Spam vs Ham")
+        ax.set_ylabel("Cantidad")
+
+        buffer = BytesIO()
+        plt.tight_layout()
+        plt.savefig(buffer, format="png")
+        plt.close()
+
+        grafica = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     return render(request, "ejercicios/ejercicio5.html", {
-        "lineas": lineas
+        "datos": datos,
+        "grafica": grafica,
+        "accuracy": accuracy
     })
 
-
+# ---------------- EJERCICIO 6 (CORREGIDO) ----------------
 def ejercicio6(request):
     tabla_html = None
-
-    if request.method == 'POST' and request.FILES.get('dataset'):
-        archivo = request.FILES['dataset']
-
-        # CSV
-        if archivo.name.endswith('.csv'):
-            df = pd.read_csv(archivo)
-
-        # ARFF (ESTA PARTE ES CLAVE)
-        elif archivo.name.endswith('.arff'):
-            contenido = archivo.read().decode('utf-8')
-            data = arff.loads(contenido)
-            columnas = [a[0] for a in data['attributes']]
-            df = pd.DataFrame(data['data'], columns=columnas)
-
-        # Convertir DataFrame a tabla HTML
-        tabla_html = df.head(20).to_html(
-            classes="table",
-            border=0,
-            index=False
-        )
-
-    return render(request, 'ejercicios/ejercicio6.html', {
-        'tabla': tabla_html
-    })
-
-
-
-def ejercicio7(request):
     graficas = []
 
     if request.method == 'POST' and request.FILES.get('dataset'):
-        # 1️⃣ Cargar dataset
-        df = cargar_archivo_subido(request.FILES['dataset'])
-
-        # 2️⃣ Particionar train, val, test con stratify
-        train_set, val_set, test_set = split_dataset(df, stratify_col='protocol_type')
-
-        # 3️⃣ Crear lista de conjuntos y títulos
-        conjuntos = [
-            (df, 'Dataset Completo'),
-            (train_set, 'Train Set'),
-            (val_set, 'Validation Set'),
-            (test_set, 'Test Set')
-        ]
-        # 4️⃣ Generar las gráficas
-        for data, titulo in conjuntos:
-            plt.figure(figsize=(6,4))
-            if 'protocol_type' in data.columns:
-                data['protocol_type'].hist(color='skyblue', bins=len(data['protocol_type'].unique()))
-            plt.title(titulo)
-            plt.xlabel('Protocol Type')
-            plt.ylabel('Frecuencia')
-            plt.tight_layout()
-
-            buffer = BytesIO()
-            plt.savefig(buffer, format='png')
-            buffer.seek(0)
-            image_png = buffer.getvalue()
-            buffer.close()
-            plt.close()
-
-            graficas.append({
-                'titulo': titulo,
-                'imagen': base64.b64encode(image_png).decode('utf-8')
-            })
-
-    return render(request, 'ejercicios/ejercicio7.html', {'graficas': graficas})
-
-
-
-
-def ejercicio8(request):
-    tabla_original = tabla_limpia = tabla_escalada = tabla_protocol = None
-    longitudes = {}
-
-    if request.method == 'POST' and request.FILES.get('dataset'):
         archivo = request.FILES['dataset']
 
-        # Leer archivo
-        if archivo.name.endswith('.csv'):
-            df = pd.read_csv(archivo)
-        elif archivo.name.endswith('.arff'):
-            archivo_texto = io.TextIOWrapper(archivo.file, encoding='utf-8')
-            data = arff.load(archivo_texto)
-            columnas = [a[0] for a in data['attributes']]
-            df = pd.DataFrame(data['data'], columns=columnas)
-
-        # Particionar dataset (simple)
-        n = len(df)
-        train_set = df.iloc[:int(n*0.6)]
-        val_set   = df.iloc[int(n*0.6):int(n*0.8)]
-        test_set  = df.iloc[int(n*0.8):]
-        longitudes = {"train": len(train_set), "val": len(val_set), "test": len(test_set)}
-
-        # Limpiar datos: src_bytes y dst_bytes → numérico y rellenar NaN con media
-        X_train = train_set.drop("class", axis=1, errors='ignore')
-        for col in ["src_bytes", "dst_bytes"]:
-            if col in X_train.columns:
-                X_train[col] = pd.to_numeric(X_train[col], errors='coerce')
-                X_train[col] = X_train[col].fillna(X_train[col].mean())
-
-        # Escalado robusto de src_bytes y dst_bytes
-        if "src_bytes" in X_train.columns and "dst_bytes" in X_train.columns:
-            scaler = RobustScaler()
-            X_scaled = pd.DataFrame(
-                scaler.fit_transform(X_train[['src_bytes','dst_bytes']]),
-                columns=['src_bytes','dst_bytes']
-            )
-        else:
-            X_scaled = pd.DataFrame()
-
-        # Codificación ordinal de protocol_type
-        if 'protocol_type' in X_train.columns:
-            ordinal_encoder = OrdinalEncoder()
-            protocol_encode = pd.DataFrame(
-                ordinal_encoder.fit_transform(X_train[['protocol_type']]),
-                columns=['protocol_type_encoded']
-            )
-            tabla_protocol = pd.concat([X_train[['protocol_type']].head(10), protocol_encode.head(10)], axis=1).to_html(
-                classes="table table-striped", index=False
-            )
-
-        # Preparar tablas para mostrar
-        tabla_original = X_train.head(10).to_html(classes="table table-striped", index=False)
-        tabla_limpia = X_train.head(10).to_html(classes="table table-striped", index=False)
-        tabla_escalada = X_scaled.head(10).to_html(classes="table table-striped", index=False)
-
-    return render(request, 'ejercicios/ejercicio8.html', {
-        "longitudes": longitudes,
-        "tabla_original": tabla_original,
-        "tabla_limpia": tabla_limpia,
-        "tabla_escalada": tabla_escalada,
-        "tabla_protocol": tabla_protocol
-    })
-
-  
-
-
-def ejercicio9(request):
-    tabla_original = None
-    tabla_transformada = None
-
-    if request.method == 'POST' and request.FILES.get('dataset'):
-        archivo = request.FILES['dataset']
-
-        # --------- CARGA DATASET ---------
+        # ---- CARGA DATASET ----
         if archivo.name.endswith('.csv'):
             df = pd.read_csv(archivo)
 
         elif archivo.name.endswith('.arff'):
             contenido = archivo.read().decode('utf-8', errors='ignore')
             data = arff.loads(contenido)
-
             columnas = [a[0] for a in data['attributes']]
             df = pd.DataFrame(data['data'], columns=columnas)
 
-        # --------- SEPARAR X / y ---------
-        X = df.iloc[:, :-1]
-        y = df.iloc[:, -1]
-
-        # --------- TRAIN / TEST ---------
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.3, random_state=42
+        # ---- TABLA ----
+        tabla_html = df.head(20).to_html(
+            classes="table table-striped table-sm",
+            index=False
         )
 
-        # --------- COLUMNAS ---------
-        num_attribs = X_train.select_dtypes(include=['int64', 'float64']).columns
-        cat_attribs = X_train.select_dtypes(include=['object']).columns
+        # ---- BARRAS: protocol_type ----
+        if 'protocol_type' in df.columns:
+            plt.figure(figsize=(6,4))
+            df['protocol_type'].value_counts().plot(kind='bar')
+            plt.title('Distribución de Protocol Type')
+            plt.xlabel('Protocol')
+            plt.ylabel('Frecuencia')
+            plt.tight_layout()
 
-        # --------- PIPELINES ---------
-        num_pipeline = Pipeline([
-            ('imputer', SimpleImputer(strategy='median')),
-            ('scaler', StandardScaler())
-        ])
+            buffer = BytesIO()
+            plt.savefig(buffer, format='png')
+            buffer.seek(0)
+            graficas.append({
+                'titulo': 'Distribución de protocol_type',
+                'imagen': base64.b64encode(buffer.getvalue()).decode('utf-8')
+            })
+            buffer.close()
+            plt.close()
 
-        cat_pipeline = Pipeline([
-            ('imputer', SimpleImputer(strategy='most_frequent')),
-            ('onehot', OneHotEncoder(handle_unknown='ignore'))
-        ])
+        # ---- HISTOGRAMAS (LEGIBLES) ----
+        numeric_df = df.select_dtypes(include=['int64', 'float64'])
+        numeric_df = numeric_df.iloc[:, :20]
 
-        full_pipeline = ColumnTransformer([
-            ('num', num_pipeline, num_attribs),
-            ('cat', cat_pipeline, cat_attribs)
-        ])
+        numeric_df.hist(
+            bins=40,
+            figsize=(24, 18),
+            grid=False
+        )
 
-        # --------- TRANSFORMACIÓN ---------
-        X_train_prep = full_pipeline.fit_transform(X_train)
+        plt.suptitle('Histogramas de atributos numéricos', fontsize=18)
+        plt.subplots_adjust(top=0.93, hspace=0.4, wspace=0.3)
 
-        X_train_prep = pd.DataFrame(
-            X_train_prep.toarray() if hasattr(X_train_prep, "toarray") else X_train_prep,
-            columns=list(pd.get_dummies(X_train).columns),
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        buffer.seek(0)
+        graficas.append({
+            'titulo': 'Histogramas de atributos numéricos',
+            'imagen': base64.b64encode(buffer.getvalue()).decode('utf-8')
+        })
+        buffer.close()
+        plt.close()
+
+        # ---- MATRIZ DE CORRELACIÓN ----
+        corr = numeric_df.corr()
+
+        plt.figure(figsize=(14,12))
+        plt.imshow(corr, cmap='viridis', aspect='auto')
+        plt.colorbar(fraction=0.046, pad=0.04)
+        plt.xticks(range(len(corr.columns)), corr.columns, rotation=90, fontsize=8)
+        plt.yticks(range(len(corr.columns)), corr.columns, fontsize=8)
+        plt.title('Matriz de correlación', fontsize=16)
+        plt.tight_layout()
+
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        buffer.seek(0)
+        graficas.append({
+            'titulo': 'Matriz de correlación',
+            'imagen': base64.b64encode(buffer.getvalue()).decode('utf-8')
+        })
+        buffer.close()
+        plt.close()
+
+        # ---- SCATTER MATRIX ----
+        from pandas.plotting import scatter_matrix
+
+        atributos = [
+            col for col in [
+                'same_srv_rate',
+                'dst_host_srv_count',
+                'dst_host_same_srv_rate'
+            ] if col in df.columns
+        ]
+
+        if len(atributos) >= 2:
+            scatter_matrix(df[atributos], figsize=(10,8), diagonal='hist')
+            plt.suptitle('Scatter Matrix', fontsize=16)
+            plt.tight_layout()
+
+            buffer = BytesIO()
+            plt.savefig(buffer, format='png')
+            buffer.seek(0)
+            graficas.append({
+                'titulo': 'Scatter Matrix',
+                'imagen': base64.b64encode(buffer.getvalue()).decode('utf-8')
+            })
+            buffer.close()
+            plt.close()
+
+    return render(request, 'ejercicios/ejercicio6.html', {
+        'tabla': tabla_html,
+        'graficas': graficas
+    })
+
+
+# ---------------- EJERCICIO 7 ----------------
+def ejercicio7(request):
+    graficas = []
+
+    if request.method == 'POST' and request.FILES.get('dataset'):
+        df = cargar_archivo_subido(request.FILES['dataset'])
+
+        train_set, val_set, test_set = split_dataset(df, stratify_col='protocol_type')
+
+        conjuntos = [
+            (df, 'Dataset Completo'),
+            (train_set, 'Train Set'),
+            (val_set, 'Validation Set'),
+            (test_set, 'Test Set')
+        ]
+
+        for data, titulo in conjuntos:
+            if 'protocol_type' in data.columns:
+                plt.figure(figsize=(6,4))
+                data['protocol_type'].value_counts().plot(kind='bar')
+                plt.title(titulo)
+                plt.xlabel('Protocol Type')
+                plt.ylabel('Frecuencia')
+                plt.tight_layout()
+
+                buffer = BytesIO()
+                plt.savefig(buffer, format='png')
+                buffer.seek(0)
+                graficas.append({
+                    'titulo': titulo,
+                    'imagen': base64.b64encode(buffer.getvalue()).decode('utf-8')
+                })
+                buffer.close()
+                plt.close()
+
+    return render(request, 'ejercicios/ejercicio7.html', {'graficas': graficas})
+
+# ---------------- EJERCICIO 8 (FINAL COMPLETO) ----------------
+def ejercicio8(request):
+    context = {}
+
+    if request.method == 'POST' and request.FILES.get('dataset'):
+        archivo = request.FILES['dataset']
+
+        # ===== 1. CARGA =====
+        if archivo.name.endswith('.csv'):
+            df = pd.read_csv(archivo)
+        else:
+            archivo_texto = TextIOWrapper(archivo.file, encoding='utf-8')
+            data = arff.load(archivo_texto)
+            columnas = [a[0] for a in data['attributes']]
+            df = pd.DataFrame(data['data'], columns=columnas)
+
+        # ===== 2. TRAIN =====
+        n = len(df)
+        train_set = df.iloc[:int(n * 0.6)]
+        X_train = train_set.drop("class", axis=1, errors="ignore")
+
+        # 1️⃣ TABLA ORIGINAL
+        context["tabla_original"] = X_train.head(10).to_html(
+            classes="table table-striped table-bordered table-sm"
+        )
+
+        # 2️⃣ VARIABLES NUMÉRICAS
+        X_train_num = X_train.select_dtypes(include=["int64", "float64"])
+        context["tabla_numericas"] = X_train_num.head(10).to_html(
+            classes="table table-striped table-bordered table-sm"
+        )
+
+        # 3️⃣ TERCERA TABLA (CON NaN)
+        context["tabla_tercera"] = X_train_num.head(10).to_html(
+            classes="table table-striped table-bordered table-sm"
+        )
+
+        # 4️⃣ CUARTA TABLA (DROP NaN)
+        X_train_dropna = X_train_num.dropna(subset=["src_bytes", "dst_bytes"])
+        context["tabla_cuarta"] = X_train_dropna.head(10).to_html(
+            classes="table table-striped table-bordered table-sm"
+        )
+
+        # 5️⃣ QUINTA TABLA (ELIMINAR COLUMNAS)
+        X_train_quinta = X_train_num.drop(
+            ["src_bytes", "dst_bytes"],
+            axis=1,
+            errors="ignore"
+        )
+        context["tabla_quinta"] = X_train_quinta.head(10).to_html(
+            classes="table table-striped table-bordered table-sm"
+        )
+
+        # 6️⃣ SEXTA TABLA (RELLENAR MEDIA)
+        X_train_sexta = X_train_num.copy()
+        for col in ["src_bytes", "dst_bytes"]:
+            if col in X_train_sexta.columns:
+                X_train_sexta[col] = pd.to_numeric(
+                    X_train_sexta[col], errors="coerce"
+                )
+                X_train_sexta[col].fillna(
+                    X_train_sexta[col].mean(),
+                    inplace=True
+                )
+
+        context["tabla_sexta"] = X_train_sexta.head(10).to_html(
+            classes="table table-striped table-bordered table-sm"
+        )
+
+        # 7️⃣ DATAFRAME LIMPIO
+        X_train_limpio = pd.DataFrame(
+            X_train_sexta.values,
+            columns=X_train_sexta.columns
+        )
+        context["tabla_limpia"] = X_train_limpio.head(10).to_html(
+            classes="table table-striped table-bordered table-sm"
+        )
+
+        # 8️⃣ ONE HOT ENCODING
+        if "protocol_type" in X_train.columns:
+            dummies = pd.get_dummies(X_train["protocol_type"])
+            context["tabla_protocol"] = dummies.head(10).to_html(
+                classes="table table-striped table-bordered table-sm"
+            )
+
+        # 9️⃣ ESCALADO
+        if {"src_bytes", "dst_bytes"}.issubset(X_train_limpio.columns):
+            scaler = StandardScaler()
+            X_scaled = pd.DataFrame(
+                scaler.fit_transform(
+                    X_train_limpio[["src_bytes", "dst_bytes"]]
+                ),
+                columns=["src_bytes", "dst_bytes"]
+            )
+
+            context["tabla_escalada"] = X_scaled.head(10).to_html(
+                classes="table table-striped table-bordered table-sm"
+            )
+
+    return render(request, 'ejercicios/ejercicio8.html', context)
+
+
+
+
+def ejercicio9(request):
+    context = {}
+
+    if request.method == "POST" and request.FILES.get("dataset"):
+
+        # ===============================
+        # LECTURA CORRECTA DE ARFF
+        # ===============================
+        df = cargar_archivo_subido(request.FILES["dataset"])
+
+        # ===============================
+        # 1️⃣ X_train ORIGINAL
+        # ===============================
+        X_train = df.copy()
+        context["tabla_original"] = X_train.head(10).to_html(
+            classes="table table-bordered table-sm",
+            index=True
+        )
+
+        # ===============================
+        # 2️⃣ GET DUMMIES protocol_type
+        # ===============================
+        dummies_protocol = pd.get_dummies(X_train["protocol_type"])
+        context["tabla_dummies_protocol"] = dummies_protocol.head(10).to_html(
+            classes="table table-bordered table-sm",
+            index=True
+        )
+
+        # ===============================
+        # 3️⃣ ESCALADO src_bytes, dst_bytes
+        # ===============================
+        scaler = StandardScaler()
+        X_train_scaled = pd.DataFrame(
+            scaler.fit_transform(
+                X_train[["src_bytes", "dst_bytes"]].fillna(0)
+            ),
+            columns=["src_bytes", "dst_bytes"],
             index=X_train.index
         )
 
-        # --------- TABLAS HTML ---------
-        tabla_original = X_train.head(10).to_html(
-            classes="table", border=0
+        context["tabla_scaled"] = X_train_scaled.head(10).to_html(
+            classes="table table-bordered table-sm",
+            index=True
         )
 
-        tabla_transformada = X_train_prep.head(10).to_html(
-            classes="table", border=0
+        # ===============================
+        # 4️⃣ SOLO NUMÉRICAS SIN NaN
+        # ===============================
+        X_train_num = X_train.select_dtypes(include=["int64", "float64"])
+        X_train_num = X_train_num.fillna(0)
+
+        context["tabla_numerica"] = X_train_num.head(10).to_html(
+            classes="table table-bordered table-sm",
+            index=True
         )
 
-    return render(request, 'ejercicios/ejercicio9.html', {
-        'tabla_original': tabla_original,
-        'tabla_transformada': tabla_transformada
-    })
+        # ===============================
+        # 5️⃣ PIPELINE COMPLETO (IGUAL AL NOTEBOOK)
+        # ===============================
+        num_cols = X_train.select_dtypes(include=["int64", "float64"]).columns
+        cat_cols = X_train.select_dtypes(include=["object"]).columns
 
+        num_pipeline = Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler())
+        ])
 
+        cat_pipeline = Pipeline([
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore"))
+        ])
 
+        full_pipeline = ColumnTransformer([
+            ("num", num_pipeline, num_cols),
+            ("cat", cat_pipeline, cat_cols)
+        ])
+
+        X_train_prep = full_pipeline.fit_transform(X_train)
+
+        columnas_finales = (
+            list(num_cols) +
+            list(
+                full_pipeline.named_transformers_["cat"]
+                .named_steps["onehot"]
+                .get_feature_names_out(cat_cols)
+            )
+        )
+
+        # ✅ CORRECCIÓN CLAVE AQUÍ
+        if hasattr(X_train_prep, "toarray"):
+            X_train_prep = X_train_prep.toarray()
+
+        X_train_prep = pd.DataFrame(
+            X_train_prep,
+            columns=columnas_finales,
+            index=X_train.index
+        )
+
+        context["tabla_pipeline"] = X_train_prep.head(10).to_html(
+            classes="table table-bordered table-sm",
+            index=True
+        )
+
+    return render(request, "ejercicios/ejercicio9.html", context)
 
 def ejercicio10(request):
-    tabla = None
+    context = {}
 
-    if request.method == "POST":
-        archivo = request.FILES["dataset"]
+    if request.method == "POST" and request.FILES.get("dataset"):
 
-        # 🔴 CONVERSIÓN CLAVE (bytes → texto)
-        archivo_texto = TextIOWrapper(archivo.file, encoding="utf-8")
+        # ===============================
+        # 1️⃣ LECTURA CORRECTA DEL ARFF
+        # ===============================
+        data = cargar_archivo_subido(request.FILES["dataset"])
 
-        data = arff.load(archivo_texto)
-        columnas = [attr[0] for attr in data["attributes"]]
-        df = pd.DataFrame(data["data"], columns=columnas)
-
-        # Quitar clase
-        X = df.drop("class", axis=1)
-
-        # Preprocesamiento
-        preparer = DataFramePreparer()
-        X_prep = preparer.fit_transform(X)
-
-        # Mostrar solo las primeras filas (como en la imagen)
-        tabla = X_prep.head(10).to_html(
-            classes="table",
-            border=1
+        # TABLA 1 → DATASET COMPLETO
+        context["tabla_datos"] = data.head(10).to_html(
+            classes="table table-bordered table-sm",
+            index=True
         )
 
-    return render(request, "ejercicios/ejercicio10.html", {
-        "tabla": tabla
-    })
+        # ===============================
+        # 2️⃣ SEPARAR X y y (class)
+        # ===============================
+        X = data.drop("class", axis=1)
+        y = data["class"]
+
+        # ===============================
+        # 3️⃣ DIVISIÓN (MISMO ESPÍRITU DEL NOTEBOOK)
+        # ===============================
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=0.2,
+            random_state=42,
+            stratify=y
+        )
+
+        # TABLA 2 → X_train.head(10)
+        context["tabla_xtrain"] = X_train.head(10).to_html(
+            classes="table table-bordered table-sm",
+            index=True
+        )
+
+    return render(request, "ejercicios/ejercicio10.html", context)

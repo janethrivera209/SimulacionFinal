@@ -34,9 +34,6 @@
     <h1 class="fw-bold text-center mb-3">
         Ejercicio 9 – División del Dataset y Pipeline
     </h1>
-    <p class="text-center text-muted mb-4">
-        
-    </p>
 
     <!-- FORMULARIO -->
     <div class="card p-4 mb-4">
@@ -52,19 +49,43 @@
 
     {% if tabla_original %}
 
-    <!-- TABLA ORIGINAL -->
+    <!-- 1️⃣ TABLA ORIGINAL -->
     <div class="card p-4 mb-4">
-        <h5 class="fw-semibold mb-3">X_train.head(10)</h5>
+        <h5 class="fw-semibold mb-3">1️⃣ X_train.head(10)</h5>
         <div class="table-responsive table-container">
             {{ tabla_original|safe }}
         </div>
     </div>
 
-    <!-- TABLA TRANSFORMADA -->
+    <!-- 2️⃣ DUMMIES protocol_type -->
     <div class="card p-4 mb-4">
-        <h5 class="fw-semibold mb-3">X_train_prep.head(10)</h5>
+        <h5 class="fw-semibold mb-3">2️⃣ get_dummies(protocol_type)</h5>
         <div class="table-responsive table-container">
-            {{ tabla_transformada|safe }}
+            {{ tabla_dummies_protocol|safe }}
+        </div>
+    </div>
+
+    <!-- 3️⃣ ESCALADO -->
+    <div class="card p-4 mb-4">
+        <h5 class="fw-semibold mb-3">3️⃣ Escalado (src_bytes, dst_bytes)</h5>
+        <div class="table-responsive table-container">
+            {{ tabla_scaled|safe }}
+        </div>
+    </div>
+
+    <!-- 4️⃣ NUMÉRICAS SIN NaN -->
+    <div class="card p-4 mb-4">
+        <h5 class="fw-semibold mb-3">4️⃣ Variables numéricas sin NaN</h5>
+        <div class="table-responsive table-container">
+            {{ tabla_numerica|safe }}
+        </div>
+    </div>
+
+    <!-- 5️⃣ PIPELINE COMPLETO -->
+    <div class="card p-4 mb-4">
+        <h5 class="fw-semibold mb-3">5️⃣ Pipeline completo (X_train_prep.head(10))</h5>
+        <div class="table-responsive table-container">
+            {{ tabla_pipeline|safe }}
         </div>
     </div>
 
@@ -79,5 +100,4 @@
 
 </body>
 </html>
-
 
