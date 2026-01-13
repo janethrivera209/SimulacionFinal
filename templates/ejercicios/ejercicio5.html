@@ -85,14 +85,14 @@ a {
 {% endif %}
 
 {% if datos %}
-    <h2>Ejemplo de correos procesados (primeros 300)</h2>
+    <h2>Correos procesados</h2>
 
     <table>
         <tr>
             <th>Tipo</th>
             <th>Archivo</th>
         </tr>
-        {% for d in datos|slice:":300" %}
+        {% for d in datos|slice:":10000" %}
         <tr>
             <td>
                 {% if d.tipo == "spam" %}

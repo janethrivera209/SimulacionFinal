@@ -8,10 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&199fv@e9cvg4%#o7n=l$4qe(5yt#$@7pw^vkr155l2o5-j!be'
 
 # DEBUG ON para desarrollo local
-DEBUG = True
+DEBUG = False
+
 
 # Solo localhost
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
+
 
 
 # Application definition
@@ -71,15 +73,21 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://therese-estrous-muoi.ngrok-free.dev",
+]
+
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# === SUBIDA DE ARCHIVOS GRANDES ===
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 100   # 100 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 100  # 100 MB

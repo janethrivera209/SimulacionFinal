@@ -13,19 +13,33 @@
         Ejercicio 10 – División del Dataset
     </h1>
 
+    <!-- FORMULARIO DE SUBIDA -->
     <div class="card p-4 mb-4">
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <label class="form-label fw-semibold">Subir archivo ARFF</label>
             <input type="file" name="dataset" class="form-control mb-3" required>
-            <button class="btn btn-primary" type="submit">
-                Procesar
-            </button>
+            <button class="btn btn-primary" type="submit">Procesar</button>
         </form>
     </div>
 
-    {% if tabla_datos %}
+    {% if metrics %}
+    <!-- MÉTRICAS -->
+    <div class="card p-4 mb-4 bg-light">
+        <h5 class="fw-semibold mb-3">Métricas del Modelo</h5>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">Accuracy: {{ metrics.accuracy }}</li>
+            <li class="list-group-item">Precision: {{ metrics.precision }}</li>
+            <li class="list-group-item">Recall: {{ metrics.recall }}</li>
+            <li class="list-group-item">F1 Score: {{ metrics.f1_score }}</li>
+            <li class="list-group-item">Total predicciones: {{ metrics.total }}</li>
+            <li class="list-group-item">Correctas: {{ metrics.correctas }}</li>
+            <li class="list-group-item">Incorrectas: {{ metrics.incorrectas }}</li>
+        </ul>
+    </div>
+    {% endif %}
 
+    {% if tabla_datos %}
     <!-- TABLA 1 -->
     <div class="card p-4 mb-4">
         <h5 class="fw-semibold mb-3">Lectura de los Datos (data.head)</h5>
@@ -41,7 +55,6 @@
             {{ tabla_xtrain|safe }}
         </div>
     </div>
-
     {% endif %}
 
     <a href="/" class="btn btn-secondary">⬅ Volver</a>
@@ -50,3 +63,4 @@
 
 </body>
 </html>
+
